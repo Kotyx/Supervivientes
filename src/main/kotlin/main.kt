@@ -1,14 +1,14 @@
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
+
 fun main() {
     comenzar()
-    Thread.sleep(80000)
+
 }
 val mutex = Mutex()
+class Reserva(var ramas: Int,var comida: Int)
 fun comenzar(){
 
     val CUBOS_NECESARIOS = 4
@@ -16,24 +16,29 @@ fun comenzar(){
     val RAMA_NECESARIA  = 1
     val COMIDA_NECESARIA  = 1
 
-    var agua=AmigoA()
-    var lena=AmigoB()
-    var reservas=AmigoC()
-    if(agua==CUBOS_NECESARIOS && lena==LENA_NECESARIA && reservas.ramas==RAMA_NECESARIA && reservas.comida==COMIDA_NECESARIA){
+    var agua = 0
+    var lena =  0
+    var reservas:Reserva
+    runBlocking {
+        agua=AmigoA()
+        AmigoB()
+        reservas=AmigoC()
+        delay(50000)
+    }
+    if (agua == CUBOS_NECESARIOS && lena == LENA_NECESARIA && reservas.ramas == RAMA_NECESARIA && reservas.comida == COMIDA_NECESARIA) {
         println("Barca construida y aprovisionada con exito")
-    }else{
+    } else {
         println("Error")
     }
-
 }
-fun AmigoA(): Int {
+fun AmigoA() {
     var cubosActuales = 0
     GlobalScope.launch {
         for(i in 0..3){
             println("El amigo A va a por un cubo de agua")
             delay(4000)
             println("El amigo A a vuelto con un cubo de agua")
-            cubosActuales++
+            ++cubosActuales
             println("El amigo A quiere descansar")
             hamaca("Amigo A")
             println("El amigo A deja de descansar")
@@ -41,22 +46,28 @@ fun AmigoA(): Int {
     }
     return cubosActuales
 }
-fun AmigoB(): Int {
-    var lenaActual = 0
+suspend fun AmigoB():Int{
+    var result=0
     GlobalScope.launch {
-        for(i in 0..1){
-            println("El amigo B va a por leña")
-            hacha("Amigo B")
-            println("El amigo B vuelve con leña")
-            lenaActual++
-            println("El amigo B quiere descansar")
-            hamaca("Amigo B")
-            println("El amigo B deja de descansar")
+        val lenaActual = async(start = CoroutineStart.LAZY) {
+            var cont = 0
+            for (i in 0..1) {
+                println("El amigo B va a por leña")
+                hacha("Amigo B")
+                println("El amigo B vuelve con leña")
+                cont += 1
+                println("El amigo B quiere descansar")
+                hamaca("Amigo B")
+                println("El amigo B deja de descansar")
+            }
+            cont
         }
+        result=lenaActual.await()
     }
-    return lenaActual
+    return result
+
 }
-class Reserva(var ramas: Int,var comida: Int)
+
 
 fun AmigoC(): Reserva {
     var ramasActuales = 0
@@ -65,11 +76,11 @@ fun AmigoC(): Reserva {
         println("El amigo C va por ramas")
         delay(3000)
         println("El amigo C vuelve con ramas")
-        ramasActuales++
+        ++ramasActuales
         println("El amigo C va a cazar")
-        hacha("Amigo C")
+        hacha1("Amigo C")
         println("El amigo C vuelve de cazar")
-        comidaActual++
+        ++comidaActual
     }
     val reserva= Reserva(ramasActuales,comidaActual)
     return reserva
