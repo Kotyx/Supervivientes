@@ -16,74 +16,75 @@ fun comenzar(){
     val RAMA_NECESARIA  = 1
     val COMIDA_NECESARIA  = 1
 
-    var agua = 0
-    var lena =  0
-    var reservas:Reserva
-    runBlocking {
-        agua=AmigoA()
-        AmigoB()
-        reservas=AmigoC()
-        delay(50000)
-    }
-    if (agua == CUBOS_NECESARIOS && lena == LENA_NECESARIA && reservas.ramas == RAMA_NECESARIA && reservas.comida == COMIDA_NECESARIA) {
-        println("Barca construida y aprovisionada con exito")
-    } else {
-        println("Error")
-    }
+    var agua :Deferred<Int>
+    var lena :Deferred<Int>
+    var reservas:Deferred<Reserva>
+
+        GlobalScope.launch {
+            agua=AmigoA()
+            lena=AmigoB()
+            reservas=AmigoC()
+            delay(2000)
+            if (agua.await() == CUBOS_NECESARIOS && lena.await() == LENA_NECESARIA && reservas.await().ramas == RAMA_NECESARIA && reservas.await().comida == COMIDA_NECESARIA) {
+                println("Barca construida y aprovisionada con exito")
+            } else {
+                println("Error")
+            }
+        }
+
+
+    Thread.sleep(50000)
+
 }
-fun AmigoA() {
-    var cubosActuales = 0
-    GlobalScope.launch {
-        for(i in 0..3){
+suspend fun AmigoA() : Deferred<Int> {
+    return GlobalScope.async() {
+        var cont=0
+        for(i in 0..3) {
             println("El amigo A va a por un cubo de agua")
             delay(4000)
             println("El amigo A a vuelto con un cubo de agua")
-            ++cubosActuales
+            cont++
             println("El amigo A quiere descansar")
             hamaca("Amigo A")
             println("El amigo A deja de descansar")
         }
+        cont
     }
-    return cubosActuales
+
 }
-suspend fun AmigoB():Int{
-    var result=0
-    GlobalScope.launch {
-        val lenaActual = async(start = CoroutineStart.LAZY) {
-            var cont = 0
-            for (i in 0..1) {
-                println("El amigo B va a por leña")
-                hacha("Amigo B")
-                println("El amigo B vuelve con leña")
-                cont += 1
-                println("El amigo B quiere descansar")
-                hamaca("Amigo B")
-                println("El amigo B deja de descansar")
-            }
-            cont
+suspend fun AmigoB(): Deferred<Int> {
+    val lenaActual = GlobalScope.async() {
+        var cont = 0
+        for (i in 0..1) {
+            println("El amigo B va a por leña")
+            hacha("Amigo B")
+            println("El amigo B vuelve con leña")
+            cont += 1
+            println("El amigo B quiere descansar")
+            hamaca("Amigo B")
+            println("El amigo B deja de descansar")
         }
-        result=lenaActual.await()
+        cont
     }
-    return result
-
+    return lenaActual
 }
 
 
-fun AmigoC(): Reserva {
-    var ramasActuales = 0
-    var comidaActual = 0
-    GlobalScope.launch {
+fun AmigoC(): Deferred<Reserva> {
+    return GlobalScope.async(){
+        var contramas=0
+        var contcomida=0
         println("El amigo C va por ramas")
         delay(3000)
         println("El amigo C vuelve con ramas")
-        ++ramasActuales
+        contramas+=1
         println("El amigo C va a cazar")
-        hacha1("Amigo C")
+        hacha("Amigo C")
         println("El amigo C vuelve de cazar")
-        ++comidaActual
+        contcomida+=1
+        var reserva= Reserva(contramas,contcomida)
+        reserva
     }
-    val reserva= Reserva(ramasActuales,comidaActual)
-    return reserva
 }
 suspend fun hamaca(amigo:String){
     mutex.withLock {
